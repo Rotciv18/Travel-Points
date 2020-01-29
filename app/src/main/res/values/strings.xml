@@ -17,4 +17,5 @@
     <string name="permission_denied">Permissões Negadas</string>
     <string name="permission_denied_message">Para utilizar o app é necessário aceitar as permissões</string>
     <string name="confirm">Confirmar</string>
+    <string name="title_activity_select_points">SelectPointsActivity</string>
 </resources>

@@ -7,6 +7,7 @@ import androidx.core.content.ContextCompat;
 
 import android.Manifest;
 import android.content.DialogInterface;
+import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.os.Build;
 import android.os.Bundle;
@@ -65,7 +66,7 @@ public class MainActivity extends IntroActivity {
 
         if (Build.VERSION.SDK_INT >= 23 ) {
             if (ContextCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED) {
-                // manda pra activity
+                startActivity(new Intent(this, SelectPointsActivity.class));
             } else {
                 Permissions.validatePermissions(permissions, this, 1);
             }
@@ -79,6 +80,8 @@ public class MainActivity extends IntroActivity {
         for ( int permissionResult : grantResults ) {
             if ( permissionResult == PackageManager.PERMISSION_DENIED) {
                 alertPermissionValidation();
+            } else {
+                startActivity(new Intent(this, SelectPointsActivity.class));
             }
         }
     }
