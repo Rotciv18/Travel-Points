@@ -1,0 +1,20 @@
+<resources>
+    <!--  MainActivity STRINGS  -->
+    <string name="welcome">Bem Vindo ao TravelPoints!</string>
+    <string name="how_to_use">COMO UTILIZAR</string>
+    <string name="description_1">Identifique quais os primeiros pontos para visitar e gaste menos tempo e combustível!</string>
+    <string name="description_2">Escolha seu Ponto de Partida</string>
+    <string name="description_3">Adicione todos os pontos que deseja visitar.
+    (Tente ser um pouquinho específico ao preencher o endereço)</string>
+    <string name="description_4">Confirme e veja sua rota completa por todos os pontos!</string>
+    <string name="app_name">Travel Points</string>
+    <string name="intro_final_explanation">Por favor, aceite as permissões do aplicativo.
+        Esta será a última vez que você verá esta mensagem</string>
+    <string name="start_using_app">Comece a utilizar o App</string>
+    <string name="start_app">Iniciar</string>
+
+    <!--PERMISSION STRINGS-->
+    <string name="permission_denied">Permissões Negadas</string>
+    <string name="permission_denied_message">Para utilizar o app é necessário aceitar as permissões</string>
+    <string name="confirm">Confirmar</string>
+</resources>
