@@ -4,6 +4,8 @@ import android.Manifest;
 import android.content.Context;
 import android.content.DialogInterface;
 import android.content.pm.PackageManager;
+import android.location.Address;
+import android.location.Geocoder;
 import android.location.Location;
 import android.location.LocationListener;
 import android.location.LocationManager;
@@ -30,11 +32,15 @@ import androidx.appcompat.widget.Toolbar;
 
 import android.util.Log;
 import android.view.View;
+import android.widget.EditText;
+import android.widget.Toast;
 
 import com.rotciv.travelpoints.R;
 
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Locale;
 
 public class SelectPointsActivity extends AppCompatActivity implements OnMapReadyCallback {
 
@@ -82,7 +88,7 @@ public class SelectPointsActivity extends AppCompatActivity implements OnMapRead
         }).setNegativeButton(R.string.request_set_a_location, new DialogInterface.OnClickListener() {
             @Override
             public void onClick(DialogInterface dialog, int which) {
-                // Definir um local de partida
+                requestStartingLocation();
             }
         });
 
@@ -116,7 +122,50 @@ public class SelectPointsActivity extends AppCompatActivity implements OnMapRead
         );
 
         //Zooms to location
-        mMap.moveCamera(CameraUpdateFactory.newLatLngZoom(location, 20));
+        mMap.moveCamera(CameraUpdateFactory.newLatLngZoom(location, 15));
+    }
+
+    public void addLocationWithAddress (String address) {
+
+        Geocoder geocoder = new Geocoder(this, Locale.getDefault());
+        try {
+            List<Address> listaEnderecos = geocoder.getFromLocationName(address, 1);
+            if (listaEnderecos != null && listaEnderecos.size() > 0) {
+                Address geocodedAddress = listaEnderecos.get(0);
+
+                LatLng location = new LatLng(geocodedAddress.getLatitude(), geocodedAddress.getLongitude());
+                locations.add(location);
+                Log.d("Mizera", geocodedAddress.toString());
+                addMapMarker(location, geocodedAddress.getSubThoroughfare() + ", " + geocodedAddress.getFeatureName());
+            }
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+
+    private void requestStartingLocation() {
+        final EditText editAddress = new EditText(this);
+
+        AlertDialog.Builder builder = new AlertDialog.Builder(this);
+        builder.setTitle(R.string.insert_place_address);
+        builder.setMessage(R.string.insert_place_address_message);
+        builder.setView(editAddress);
+        builder.setPositiveButton(R.string.confirm, new DialogInterface.OnClickListener() {
+            @Override
+            public void onClick(DialogInterface dialog, int which) {
+                String address = editAddress.getText().toString();
+
+                if (address.isEmpty()) {
+                    Toast.makeText(SelectPointsActivity.this, R.string.empty_field, Toast.LENGTH_SHORT).show();
+                    requestStartingLocation();
+                } else {
+                    addLocationWithAddress(address);
+                }
+            }
+        });
+
+        AlertDialog dialog = builder.create();
+        dialog.show();
     }
 
 }

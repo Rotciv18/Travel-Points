@@ -25,7 +25,12 @@
     <string name="request_message">Que ponto de partida deseja configurar?</string>
     <string name="request_my_place">Meu local</string>
     <string name="request_set_a_location">Definir um local</string>
+    <string name="insert_place_address">Insirir um Endereço</string>
+    <string name="insert_place_address_message">Procure ser um pouco específico com o endereço</string>
 
     <!--  ICON TITLE  -->
     <string name="my_location">Meu Local</string>
+
+    <!--  TOAST MESSAGES  -->
+    <string name="empty_field">Por favor preencha o campo</string>
 </resources>
