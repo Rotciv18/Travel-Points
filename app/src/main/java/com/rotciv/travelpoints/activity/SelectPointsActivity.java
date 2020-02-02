@@ -1,6 +1,7 @@
 package com.rotciv.travelpoints.activity;
 
 import android.Manifest;
+import android.annotation.SuppressLint;
 import android.content.Context;
 import android.content.DialogInterface;
 import android.content.pm.PackageManager;
@@ -31,8 +32,11 @@ import androidx.appcompat.app.AppCompatActivity;
 import androidx.appcompat.widget.Toolbar;
 
 import android.util.Log;
+import android.view.MotionEvent;
 import android.view.View;
+import android.view.inputmethod.InputMethodManager;
 import android.widget.EditText;
+import android.widget.ProgressBar;
 import android.widget.Toast;
 
 import com.rotciv.travelpoints.R;
@@ -44,12 +48,21 @@ import java.util.Locale;
 
 public class SelectPointsActivity extends AppCompatActivity implements OnMapReadyCallback {
 
+    /*
+    * Components
+    */
     private GoogleMap mMap;
     private boolean isMyPlace = false;
     private LocationManager locationManager;
     private LocationListener locationListener;
     private List<LatLng> locations = new ArrayList<>();
     FusedLocationProviderClient mFusedLocationClient;
+    private EditText editnewLocation;
+    private ProgressBar progressLoading;
+
+    /*
+    *
+    */
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -58,12 +71,17 @@ public class SelectPointsActivity extends AppCompatActivity implements OnMapRead
         Toolbar toolbar = findViewById(R.id.toolbar);
         setSupportActionBar(toolbar);
 
+        editnewLocation = findViewById(R.id.editNewLocation);
+        progressLoading = findViewById(R.id.progressLoading);
+
         mFusedLocationClient = LocationServices.getFusedLocationProviderClient(this);
 
         // Obtain the SupportMapFragment and get notified when the map is ready to be used.
         SupportMapFragment mapFragment = (SupportMapFragment) getSupportFragmentManager()
                 .findFragmentById(R.id.map);
         mapFragment.getMapAsync(this);
+
+        setEditTextOnTouchListener();
     }
 
     @Override
@@ -123,6 +141,8 @@ public class SelectPointsActivity extends AppCompatActivity implements OnMapRead
 
         //Zooms to location
         mMap.moveCamera(CameraUpdateFactory.newLatLngZoom(location, 15));
+
+        Log.d("Mizera", locations.toString());
     }
 
     public void addLocationWithAddress (String address) {
@@ -166,6 +186,41 @@ public class SelectPointsActivity extends AppCompatActivity implements OnMapRead
 
         AlertDialog dialog = builder.create();
         dialog.show();
+    }
+
+    @SuppressLint("ClickableViewAccessibility")
+    private void setEditTextOnTouchListener() {
+        editnewLocation.setOnTouchListener(new View.OnTouchListener() {
+            @Override
+            public boolean onTouch(View v, MotionEvent event) {
+                final int DRAWABLE_LEFT = 0;
+                final int DRAWABLE_TOP = 1;
+                final int DRAWABLE_RIGHT = 2;
+                final int DRAWABLE_BOTTOM = 3;
+
+                if(event.getAction() == MotionEvent.ACTION_UP) {
+                    if(event.getRawX() >= (editnewLocation.getRight() - editnewLocation.getCompoundDrawables()[DRAWABLE_RIGHT].getBounds().width())) {
+
+                        String address = editnewLocation.getText().toString();
+                        addLocationWithAddress(address);
+                        editnewLocation.setText("");
+
+                        closeKeyboardWindow();
+
+                        return true;
+                    }
+                }
+                return false;
+            }
+        });
+    }
+
+    public void closeKeyboardWindow() {
+        InputMethodManager inputManager = (InputMethodManager)
+                getSystemService(Context.INPUT_METHOD_SERVICE);
+
+        inputManager.hideSoftInputFromWindow(getCurrentFocus().getWindowToken(),
+                InputMethodManager.HIDE_NOT_ALWAYS);
     }
 
 }

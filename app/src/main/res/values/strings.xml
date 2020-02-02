@@ -13,6 +13,9 @@
     <string name="start_using_app">Comece a utilizar o App</string>
     <string name="start_app">Iniciar</string>
 
+    <!--  SelectPointsActivity STRINGS  -->
+    <string name="add_locations">Adicionar um Ponto</string>
+
     <!--PERMISSION STRINGS-->
     <string name="permission_denied">Permissões Negadas</string>
     <string name="permission_denied_message">Para utilizar o app é necessário aceitar as permissões</string>
