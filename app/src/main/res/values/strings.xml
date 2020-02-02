@@ -15,6 +15,9 @@
 
     <!--  SelectPointsActivity STRINGS  -->
     <string name="add_locations">Adicionar um Ponto</string>
+    <string name="add_locations_message">Adicionar este local no mapa?</string>
+    <string name="negative">Não</string>
+    <string name="clicked_location">Adicionado ao Clique</string>
 
     <!--PERMISSION STRINGS-->
     <string name="permission_denied">Permissões Negadas</string>

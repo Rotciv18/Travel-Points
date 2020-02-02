@@ -71,6 +71,14 @@ public class SelectPointsActivity extends AppCompatActivity implements OnMapRead
         Toolbar toolbar = findViewById(R.id.toolbar);
         setSupportActionBar(toolbar);
 
+        FloatingActionButton fab = findViewById(R.id.fab);
+        fab.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                //TODO: Iniciar VND
+            }
+        });
+
         editnewLocation = findViewById(R.id.editNewLocation);
         progressLoading = findViewById(R.id.progressLoading);
 
@@ -88,7 +96,42 @@ public class SelectPointsActivity extends AppCompatActivity implements OnMapRead
     public void onMapReady(GoogleMap googleMap) {
         mMap = googleMap;
 
+        mMap.setOnMapClickListener(new GoogleMap.OnMapClickListener() {
+            @Override
+            public void onMapClick(LatLng latLng) {
+
+                addLocationWithMapClick(latLng);
+
+            }
+        });
+
         requestStartingPoint();
+
+
+    }
+
+    public void addLocationWithMapClick(final LatLng location) {
+        AlertDialog.Builder builder = new AlertDialog.Builder(this);
+        builder.setTitle(R.string.add_locations);
+        builder.setMessage(R.string.add_locations_message);
+
+        builder.setPositiveButton(R.string.confirm, new DialogInterface.OnClickListener() {
+            @Override
+            public void onClick(DialogInterface dialog, int which) {
+
+                locations.add(location);
+                addMapMarker(location, "Adicionado ao Clique");
+
+            }
+        }).setNegativeButton(R.string.negative, new DialogInterface.OnClickListener() {
+            @Override
+            public void onClick(DialogInterface dialog, int which) {
+                // does nothing
+            }
+        });
+
+        AlertDialog dialog = builder.create();
+        dialog.show();
     }
 
     public void requestStartingPoint() {
