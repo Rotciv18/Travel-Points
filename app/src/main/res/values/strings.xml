@@ -19,4 +19,13 @@
     <string name="confirm">Confirmar</string>
     <string name="title_activity_select_points">SelectPointsActivity</string>
     <string name="title_activity_maps">Map</string>
+
+    <!--  REQUEST DIALOG STRINGS  -->
+    <string name="request_title">Ponto de Partida</string>
+    <string name="request_message">Que ponto de partida deseja configurar?</string>
+    <string name="request_my_place">Meu local</string>
+    <string name="request_set_a_location">Definir um local</string>
+
+    <!--  ICON TITLE  -->
+    <string name="my_location">Meu Local</string>
 </resources>
