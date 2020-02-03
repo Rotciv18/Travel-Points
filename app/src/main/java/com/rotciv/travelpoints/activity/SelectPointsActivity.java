@@ -1,16 +1,13 @@
 package com.rotciv.travelpoints.activity;
 
-import android.Manifest;
 import android.annotation.SuppressLint;
 import android.content.Context;
 import android.content.DialogInterface;
-import android.content.pm.PackageManager;
 import android.location.Address;
 import android.location.Geocoder;
 import android.location.Location;
 import android.location.LocationListener;
 import android.location.LocationManager;
-import android.os.Build;
 import android.os.Bundle;
 
 import com.google.android.gms.location.FusedLocationProviderClient;
@@ -24,13 +21,13 @@ import com.google.android.gms.maps.model.MarkerOptions;
 import com.google.android.gms.tasks.OnCompleteListener;
 import com.google.android.gms.tasks.Task;
 import com.google.android.material.floatingactionbutton.FloatingActionButton;
-import com.google.android.material.snackbar.Snackbar;
 
 import androidx.annotation.NonNull;
 import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.appcompat.widget.Toolbar;
 
+import android.os.StrictMode;
 import android.util.Log;
 import android.view.MotionEvent;
 import android.view.View;
@@ -40,11 +37,20 @@ import android.widget.ProgressBar;
 import android.widget.Toast;
 
 import com.rotciv.travelpoints.R;
+import com.rotciv.travelpoints.helper.Graphs;
+import com.rotciv.travelpoints.helper.Maps;
+import com.rotciv.travelpoints.service.DownloadTask;
 
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
+
+import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.net.HttpURLConnection;
+import java.net.URL;
+import java.util.concurrent.ExecutionException;
 
 public class SelectPointsActivity extends AppCompatActivity implements OnMapReadyCallback {
 
@@ -55,7 +61,7 @@ public class SelectPointsActivity extends AppCompatActivity implements OnMapRead
     private boolean isMyPlace = false;
     private LocationManager locationManager;
     private LocationListener locationListener;
-    private List<LatLng> locations = new ArrayList<>();
+    private List<Location> locations = new ArrayList<>();
     FusedLocationProviderClient mFusedLocationClient;
     private EditText editnewLocation;
     private ProgressBar progressLoading;
@@ -75,7 +81,7 @@ public class SelectPointsActivity extends AppCompatActivity implements OnMapRead
         fab.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
-                //TODO: Iniciar VND
+                showRouteToLocations();
             }
         });
 
@@ -91,6 +97,52 @@ public class SelectPointsActivity extends AppCompatActivity implements OnMapRead
 
         setEditTextOnTouchListener();
     }
+    
+    public void showRouteToLocations() {
+        if (locations.size() < 0) {
+            Toast.makeText(this, R.string.few_locations, Toast.LENGTH_SHORT).show();
+        } else {
+            AlertDialog.Builder builder = new AlertDialog.Builder(this);
+            builder.setTitle(R.string.show_route);
+            builder.setMessage(R.string.show_route_message);
+
+            builder.setPositiveButton(R.string.confirm, new DialogInterface.OnClickListener() {
+                @Override
+                public void onClick(DialogInterface dialog, int which) {
+
+                    double[][] adjacentMatrix = Graphs.mountAdjacencyMatrix(locations);
+                    int[] way = Graphs.nearestNeightbor(adjacentMatrix);
+
+                    LatLng origin = new LatLng(locations.get(0).getLatitude(), locations.get(0).getLongitude());
+                    LatLng dest = new LatLng(locations.get(1).getLatitude(), locations.get(1).getLongitude());
+                    ArrayList<LatLng> markerPoints = new ArrayList<>();
+                    markerPoints.add(origin);
+                    markerPoints.add(dest);
+
+                    // Getting URL to the Google Directions API
+                    List<String> urls = Maps.getDirectionsUrl(markerPoints);
+                    String url = urls.get(0);
+
+                    StrictMode.ThreadPolicy policy = new StrictMode.ThreadPolicy.Builder().permitAll().build();
+                    StrictMode.setThreadPolicy(policy);
+
+                    DownloadTask downloadTask = new DownloadTask();
+
+                    // Start downloading json data from Google Directions API
+                    downloadTask.execute(url);
+
+                }
+            }).setNegativeButton(R.string.negative, new DialogInterface.OnClickListener() {
+                @Override
+                public void onClick(DialogInterface dialog, int which) {
+                    // does nothing
+                }
+            });
+
+            AlertDialog dialog = builder.create();
+            dialog.show();
+        }
+    }
 
     @Override
     public void onMapReady(GoogleMap googleMap) {
@@ -100,7 +152,11 @@ public class SelectPointsActivity extends AppCompatActivity implements OnMapRead
             @Override
             public void onMapClick(LatLng latLng) {
 
-                addLocationWithMapClick(latLng);
+                Location location = new Location("");
+                location.setLatitude(latLng.latitude);
+                location.setLongitude(latLng.longitude);
+
+                addLocationWithMapClick(location);
 
             }
         });
@@ -110,7 +166,7 @@ public class SelectPointsActivity extends AppCompatActivity implements OnMapRead
 
     }
 
-    public void addLocationWithMapClick(final LatLng location) {
+    public void addLocationWithMapClick(final Location location) {
         AlertDialog.Builder builder = new AlertDialog.Builder(this);
         builder.setTitle(R.string.add_locations);
         builder.setMessage(R.string.add_locations_message);
@@ -120,6 +176,7 @@ public class SelectPointsActivity extends AppCompatActivity implements OnMapRead
             public void onClick(DialogInterface dialog, int which) {
 
                 locations.add(location);
+
                 addMapMarker(location, "Adicionado ao Clique");
 
             }
@@ -165,44 +222,50 @@ public class SelectPointsActivity extends AppCompatActivity implements OnMapRead
                 if (location == null) {
                     // :(
                 } else {
-                    LatLng myLocation = new LatLng(location.getLatitude(), location.getLongitude());
+                    locations.add(location);
 
-                    locations.add(myLocation);
-
-                    addMapMarker(myLocation, "Meu Local");
+                    addMapMarker(location, "Meu Local");
                 }
             }
         });
     }
 
-    public void addMapMarker(LatLng location, String title) {
+    public void addMapMarker(Location location, String title) {
         //Adds a marker to location
+        LatLng latLng = new LatLng(location.getLatitude(), location.getLongitude());
         mMap.addMarker(new MarkerOptions()
-                .position(location)
+                .position(latLng)
                 .title(title)
         );
 
         //Zooms to location
-        mMap.moveCamera(CameraUpdateFactory.newLatLngZoom(location, 15));
+        mMap.moveCamera(CameraUpdateFactory.newLatLngZoom(latLng, 15));
 
         Log.d("Mizera", locations.toString());
     }
 
     public void addLocationWithAddress (String address) {
 
-        Geocoder geocoder = new Geocoder(this, Locale.getDefault());
-        try {
-            List<Address> listaEnderecos = geocoder.getFromLocationName(address, 1);
-            if (listaEnderecos != null && listaEnderecos.size() > 0) {
-                Address geocodedAddress = listaEnderecos.get(0);
+        if (!address.isEmpty()) {
 
-                LatLng location = new LatLng(geocodedAddress.getLatitude(), geocodedAddress.getLongitude());
-                locations.add(location);
-                Log.d("Mizera", geocodedAddress.toString());
-                addMapMarker(location, geocodedAddress.getSubThoroughfare() + ", " + geocodedAddress.getFeatureName());
+            Geocoder geocoder = new Geocoder(this, Locale.getDefault());
+            try {
+                List<Address> listaEnderecos = geocoder.getFromLocationName(address, 1);
+                if (listaEnderecos != null && listaEnderecos.size() > 0) {
+                    Address geocodedAddress = listaEnderecos.get(0);
+
+                    Location location = new Location("");
+                    location.setLatitude(geocodedAddress.getLatitude());
+                    location.setLongitude(geocodedAddress.getLongitude());
+                    locations.add(location);
+                    Log.d("Mizera", geocodedAddress.toString());
+                    addMapMarker(location, geocodedAddress.getSubThoroughfare() + ", " + geocodedAddress.getFeatureName());
+                }
+            } catch (IOException e) {
+                e.printStackTrace();
             }
-        } catch (IOException e) {
-            e.printStackTrace();
+        } else {
+            Toast.makeText(this, R.string.empty_field, Toast.LENGTH_SHORT).show();
         }
     }
 
@@ -245,12 +308,16 @@ public class SelectPointsActivity extends AppCompatActivity implements OnMapRead
                     if(event.getRawX() >= (editnewLocation.getRight() - editnewLocation.getCompoundDrawables()[DRAWABLE_RIGHT].getBounds().width())) {
 
                         String address = editnewLocation.getText().toString();
-                        addLocationWithAddress(address);
-                        editnewLocation.setText("");
+                        try {
+                            addLocationWithAddress(address);
+                            editnewLocation.setText("");
 
-                        closeKeyboardWindow();
+                            closeKeyboardWindow();
 
-                        return true;
+                            return true;
+                        } catch (Exception e) {
+                            e.printStackTrace();
+                        }
                     }
                 }
                 return false;

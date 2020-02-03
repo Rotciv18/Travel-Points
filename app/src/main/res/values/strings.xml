@@ -18,6 +18,9 @@
     <string name="add_locations_message">Adicionar este local no mapa?</string>
     <string name="negative">Não</string>
     <string name="clicked_location">Adicionado ao Clique</string>
+    <string name="few_locations">Por favor, insira mais pontos</string>
+    <string name="show_route">Calcular Rota</string>
+    <string name="show_route_message">Calcular agora a rota para estes pontos?</string>
 
     <!--PERMISSION STRINGS-->
     <string name="permission_denied">Permissões Negadas</string>

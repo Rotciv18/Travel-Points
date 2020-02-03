@@ -57,7 +57,8 @@
         android:layout_height="wrap_content"
         android:layout_gravity="bottom|end"
         android:layout_margin="@dimen/fab_margin"
-        app:fabSize="normal" />
+        android:src="@drawable/ic_check_white_24dp"
+        app:fabSize="mini" />
 
 
 </androidx.coordinatorlayout.widget.CoordinatorLayout>
