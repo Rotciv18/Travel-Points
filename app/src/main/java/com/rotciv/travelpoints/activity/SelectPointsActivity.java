@@ -3,11 +3,19 @@ package com.rotciv.travelpoints.activity;
 import android.annotation.SuppressLint;
 import android.content.Context;
 import android.content.DialogInterface;
+import android.content.res.Resources;
+import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
+import android.graphics.Canvas;
+import android.graphics.Color;
+import android.graphics.Paint;
+import android.graphics.Rect;
 import android.location.Address;
 import android.location.Geocoder;
 import android.location.Location;
 import android.location.LocationListener;
 import android.location.LocationManager;
+import android.os.AsyncTask;
 import android.os.Bundle;
 
 import com.google.android.gms.location.FusedLocationProviderClient;
@@ -16,8 +24,11 @@ import com.google.android.gms.maps.CameraUpdateFactory;
 import com.google.android.gms.maps.GoogleMap;
 import com.google.android.gms.maps.OnMapReadyCallback;
 import com.google.android.gms.maps.SupportMapFragment;
+import com.google.android.gms.maps.model.BitmapDescriptorFactory;
 import com.google.android.gms.maps.model.LatLng;
 import com.google.android.gms.maps.model.MarkerOptions;
+import com.google.android.gms.maps.model.Polyline;
+import com.google.android.gms.maps.model.PolylineOptions;
 import com.google.android.gms.tasks.OnCompleteListener;
 import com.google.android.gms.tasks.Task;
 import com.google.android.material.floatingactionbutton.FloatingActionButton;
@@ -26,6 +37,7 @@ import androidx.annotation.NonNull;
 import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.appcompat.widget.Toolbar;
+import androidx.core.content.ContextCompat;
 
 import android.os.StrictMode;
 import android.util.Log;
@@ -37,34 +49,34 @@ import android.widget.ProgressBar;
 import android.widget.Toast;
 
 import com.rotciv.travelpoints.R;
+import com.rotciv.travelpoints.directionhelpers.FetchURL;
+import com.rotciv.travelpoints.directionhelpers.TaskLoadedCallback;
 import com.rotciv.travelpoints.helper.Graphs;
-import com.rotciv.travelpoints.helper.Maps;
-import com.rotciv.travelpoints.service.DownloadTask;
+
+import org.json.JSONObject;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
 
-import java.io.InputStream;
-import java.io.InputStreamReader;
-import java.net.HttpURLConnection;
-import java.net.URL;
-import java.util.concurrent.ExecutionException;
+import static android.graphics.Bitmap.Config.ARGB_8888;
 
-public class SelectPointsActivity extends AppCompatActivity implements OnMapReadyCallback {
+public class SelectPointsActivity extends AppCompatActivity implements OnMapReadyCallback, TaskLoadedCallback {
 
     /*
     * Components
     */
-    private GoogleMap mMap;
+    private static GoogleMap mMap;
     private boolean isMyPlace = false;
-    private LocationManager locationManager;
-    private LocationListener locationListener;
     private List<Location> locations = new ArrayList<>();
     FusedLocationProviderClient mFusedLocationClient;
     private EditText editnewLocation;
     private ProgressBar progressLoading;
+    private Integer markerCounter = 0;
+
+    private Polyline currentPolyline;
 
     /*
     *
@@ -97,6 +109,37 @@ public class SelectPointsActivity extends AppCompatActivity implements OnMapRead
 
         setEditTextOnTouchListener();
     }
+
+    private String getUrl(List<Location> newLocations, String directionMode ) {
+        int destIndex = newLocations.size() - 1;
+
+        // Origin of route
+        String str_origin = "origin=" + newLocations.get(0).getLatitude() + "," + newLocations.get(0).getLongitude();
+        // Destination of route
+        String str_dest = "destination=" + newLocations.get(destIndex).getLatitude() + "," + newLocations.get(destIndex).getLongitude();
+
+        //Waypoints
+        String waypoints = "waypoints=";
+        for (int i = 1; i < destIndex; i++) {
+            Location location = newLocations.get(i);
+            waypoints += location.getLatitude() + "," + location.getLongitude();
+
+            if (i+1 < destIndex) {
+                waypoints += "|";
+            }
+        }
+
+        // Mode
+        String mode = "mode=" + directionMode;
+        // Building the parameters to the web service
+        String parameters = str_origin + "&" + str_dest + "&" + mode + "&" + waypoints;
+        // Output format
+        String output = "json";
+        // Building the url to the web service
+        String url = "https://maps.googleapis.com/maps/api/directions/" + output + "?" + parameters + "&key=" + getString(R.string.google_maps_key);
+        Log.d("DebugURL", url);
+        return url;
+    }
     
     public void showRouteToLocations() {
         if (locations.size() < 0) {
@@ -113,23 +156,26 @@ public class SelectPointsActivity extends AppCompatActivity implements OnMapRead
                     double[][] adjacentMatrix = Graphs.mountAdjacencyMatrix(locations);
                     int[] way = Graphs.nearestNeightbor(adjacentMatrix);
 
-                    LatLng origin = new LatLng(locations.get(0).getLatitude(), locations.get(0).getLongitude());
-                    LatLng dest = new LatLng(locations.get(1).getLatitude(), locations.get(1).getLongitude());
-                    ArrayList<LatLng> markerPoints = new ArrayList<>();
-                    markerPoints.add(origin);
-                    markerPoints.add(dest);
+                    List<Location> newLocations = new ArrayList<>();
 
-                    // Getting URL to the Google Directions API
-                    List<String> urls = Maps.getDirectionsUrl(markerPoints);
-                    String url = urls.get(0);
+                    for (int i = 0; i < locations.size(); i++) {
 
-                    StrictMode.ThreadPolicy policy = new StrictMode.ThreadPolicy.Builder().permitAll().build();
-                    StrictMode.setThreadPolicy(policy);
+                        newLocations.add(locations.get(way[i]));
 
-                    DownloadTask downloadTask = new DownloadTask();
+                    }
 
-                    // Start downloading json data from Google Directions API
-                    downloadTask.execute(url);
+                    MarkerOptions place1, place2;
+                    Location location1 = locations.get(0);
+                    Location location2 = locations.get(1);
+
+                    place1 = new MarkerOptions().position(new LatLng(location1.getLatitude(),
+                            location1.getLongitude())).title("Location 1");
+
+                    place2 = new MarkerOptions().position(new LatLng(location2.getLatitude(),
+                            location2.getLongitude())).title("Location 2");
+
+                    new FetchURL(SelectPointsActivity.this).execute(getUrl(newLocations,
+                            "driving"), "driving");
 
                 }
             }).setNegativeButton(R.string.negative, new DialogInterface.OnClickListener() {
@@ -231,17 +277,46 @@ public class SelectPointsActivity extends AppCompatActivity implements OnMapRead
     }
 
     public void addMapMarker(Location location, String title) {
+
+        String text = markerCounter.toString();
+
+        Bitmap bmp = makeBitmap(this, text);
+
         //Adds a marker to location
         LatLng latLng = new LatLng(location.getLatitude(), location.getLongitude());
         mMap.addMarker(new MarkerOptions()
                 .position(latLng)
                 .title(title)
+                .icon(BitmapDescriptorFactory.fromBitmap(bmp))
+
         );
 
         //Zooms to location
         mMap.moveCamera(CameraUpdateFactory.newLatLngZoom(latLng, 15));
 
-        Log.d("Mizera", locations.toString());
+        markerCounter++;
+    }
+
+    public Bitmap makeBitmap(Context context, String text)
+    {
+        Resources resources = context.getResources();
+        float scale = resources.getDisplayMetrics().density;
+        Bitmap bitmap = BitmapFactory.decodeResource(resources, R.drawable.marker);
+        bitmap = bitmap.copy(ARGB_8888, true);
+
+        Canvas canvas = new Canvas(bitmap);
+        Paint paint = new Paint(Paint.ANTI_ALIAS_FLAG);
+        paint.setColor(Color.RED); // Text color
+        paint.setTextSize(14 * scale); // Text size
+        paint.setShadowLayer(1f, 0f, 1f, Color.WHITE); // Text shadow
+        Rect bounds = new Rect();
+        paint.getTextBounds(text, 0, text.length(), bounds);
+
+        int x = bitmap.getWidth() - bounds.width() - 10; // 10 for padding from right
+        int y = bounds.height();
+        canvas.drawText(text, x, y, paint);
+
+        return  bitmap;
     }
 
     public void addLocationWithAddress (String address) {
@@ -331,6 +406,13 @@ public class SelectPointsActivity extends AppCompatActivity implements OnMapRead
 
         inputManager.hideSoftInputFromWindow(getCurrentFocus().getWindowToken(),
                 InputMethodManager.HIDE_NOT_ALWAYS);
+    }
+
+    @Override
+    public void onTaskDone(Object... values) {
+        if (currentPolyline != null)
+            currentPolyline.remove();
+        currentPolyline = mMap.addPolyline((PolylineOptions) values[0]);
     }
 
 }
