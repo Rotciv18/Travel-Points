@@ -33,10 +33,10 @@ public class Graphs {
     * Returns an array which represents a solution for the given graph
     * The array contains the way through n points, which can be interpreted as 'way[k] -> way[k+1]'
      * */
-    public static int[] nearestNeightbor( double[][] adjacencyMatrix ) {
+    public static int[] nearestNeightbor( double[][] adjacencyMatrix, boolean returnToOrigin ) {
 
         int size = adjacencyMatrix[0].length;
-        int[] way = new int[size];
+        int[] way = returnToOrigin ?  new int[size+1] : new int[size];
         boolean[] visited = new boolean[size];
 
         for (int i = 0 ; i < size ; i++) {
@@ -62,6 +62,10 @@ public class Graphs {
             }
             way[i+1] = lowestCostIndex;
             visited[lowestCostIndex] = true;
+        }
+
+        if (returnToOrigin) {
+            way[size] = way[0];
         }
 
         return way;

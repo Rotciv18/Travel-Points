@@ -43,13 +43,13 @@ public class MainActivity extends IntroActivity {
                 .build());
 
         addSlide(new SimpleSlide.Builder()
-                .title(R.string.how_to_use)
+                // .title(R.string.how_to_use)
                 .description(R.string.description_3)
                 .background(android.R.color.white)
                 .build());
 
         addSlide(new SimpleSlide.Builder()
-                .title(R.string.how_to_use)
+                // .title(R.string.how_to_use)
                 .description(R.string.description_4)
                 .background(android.R.color.white)
                 .build());

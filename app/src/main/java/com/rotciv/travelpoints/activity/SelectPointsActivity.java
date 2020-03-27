@@ -13,9 +13,6 @@ import android.graphics.Rect;
 import android.location.Address;
 import android.location.Geocoder;
 import android.location.Location;
-import android.location.LocationListener;
-import android.location.LocationManager;
-import android.os.AsyncTask;
 import android.os.Bundle;
 
 import com.google.android.gms.location.FusedLocationProviderClient;
@@ -44,7 +41,9 @@ import android.util.Log;
 import android.view.MotionEvent;
 import android.view.View;
 import android.view.inputmethod.InputMethodManager;
+import android.widget.CheckBox;
 import android.widget.EditText;
+import android.widget.LinearLayout;
 import android.widget.ProgressBar;
 import android.widget.Toast;
 
@@ -53,13 +52,11 @@ import com.rotciv.travelpoints.directionhelpers.FetchURL;
 import com.rotciv.travelpoints.directionhelpers.TaskLoadedCallback;
 import com.rotciv.travelpoints.helper.Graphs;
 
-import org.json.JSONObject;
-
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
+import java.util.Random;
 
 import static android.graphics.Bitmap.Config.ARGB_8888;
 
@@ -69,7 +66,6 @@ public class SelectPointsActivity extends AppCompatActivity implements OnMapRead
     * Components
     */
     private static GoogleMap mMap;
-    private boolean isMyPlace = false;
     private List<Location> locations = new ArrayList<>();
     FusedLocationProviderClient mFusedLocationClient;
     private EditText editnewLocation;
@@ -88,6 +84,7 @@ public class SelectPointsActivity extends AppCompatActivity implements OnMapRead
         setContentView(R.layout.activity_select_points);
         Toolbar toolbar = findViewById(R.id.toolbar);
         setSupportActionBar(toolbar);
+        getSupportActionBar().setTitle(R.string.select_points_activity_title);
 
         FloatingActionButton fab = findViewById(R.id.fab);
         fab.setOnClickListener(new View.OnClickListener() {
@@ -99,6 +96,7 @@ public class SelectPointsActivity extends AppCompatActivity implements OnMapRead
 
         editnewLocation = findViewById(R.id.editNewLocation);
         progressLoading = findViewById(R.id.progressLoading);
+
 
         mFusedLocationClient = LocationServices.getFusedLocationProviderClient(this);
 
@@ -142,37 +140,37 @@ public class SelectPointsActivity extends AppCompatActivity implements OnMapRead
     }
     
     public void showRouteToLocations() {
+        final CheckBox returnToOriginCheckBox = new CheckBox(SelectPointsActivity.this);
+        LinearLayout.LayoutParams lp = new LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.MATCH_PARENT,
+                LinearLayout.LayoutParams.MATCH_PARENT);
+        returnToOriginCheckBox.setLayoutParams(lp);
+        returnToOriginCheckBox.setText(R.string.return_to_place);
+
         if (locations.size() < 0) {
             Toast.makeText(this, R.string.few_locations, Toast.LENGTH_SHORT).show();
         } else {
             AlertDialog.Builder builder = new AlertDialog.Builder(this);
             builder.setTitle(R.string.show_route);
             builder.setMessage(R.string.show_route_message);
+            builder.setView(returnToOriginCheckBox);
 
             builder.setPositiveButton(R.string.confirm, new DialogInterface.OnClickListener() {
                 @Override
                 public void onClick(DialogInterface dialog, int which) {
 
                     double[][] adjacentMatrix = Graphs.mountAdjacencyMatrix(locations);
-                    int[] way = Graphs.nearestNeightbor(adjacentMatrix);
+                    int[] way = Graphs.nearestNeightbor(adjacentMatrix, returnToOriginCheckBox.isChecked());
 
                     List<Location> newLocations = new ArrayList<>();
 
-                    for (int i = 0; i < locations.size(); i++) {
+                    int size = returnToOriginCheckBox.isChecked() ?
+                            locations.size() + 1 : locations.size();
+                    for (int i = 0; i < size; i++) {
 
                         newLocations.add(locations.get(way[i]));
 
                     }
-
-                    MarkerOptions place1, place2;
-                    Location location1 = locations.get(0);
-                    Location location2 = locations.get(1);
-
-                    place1 = new MarkerOptions().position(new LatLng(location1.getLatitude(),
-                            location1.getLongitude())).title("Location 1");
-
-                    place2 = new MarkerOptions().position(new LatLng(location2.getLatitude(),
-                            location2.getLongitude())).title("Location 2");
 
                     new FetchURL(SelectPointsActivity.this).execute(getUrl(newLocations,
                             "driving"), "driving");
@@ -247,7 +245,6 @@ public class SelectPointsActivity extends AppCompatActivity implements OnMapRead
             @Override
             public void onClick(DialogInterface dialog, int which) {
                 getMyPlace();
-                isMyPlace = true;
             }
         }).setNegativeButton(R.string.request_set_a_location, new DialogInterface.OnClickListener() {
             @Override
@@ -292,7 +289,7 @@ public class SelectPointsActivity extends AppCompatActivity implements OnMapRead
         );
 
         //Zooms to location
-        mMap.moveCamera(CameraUpdateFactory.newLatLngZoom(latLng, 15));
+        mMap.moveCamera(CameraUpdateFactory.newLatLngZoom(latLng, 14));
 
         markerCounter++;
     }
@@ -307,7 +304,7 @@ public class SelectPointsActivity extends AppCompatActivity implements OnMapRead
         Canvas canvas = new Canvas(bitmap);
         Paint paint = new Paint(Paint.ANTI_ALIAS_FLAG);
         paint.setColor(Color.RED); // Text color
-        paint.setTextSize(14 * scale); // Text size
+        paint.setTextSize(16 * scale); // Text size
         paint.setShadowLayer(1f, 0f, 1f, Color.WHITE); // Text shadow
         Rect bounds = new Rect();
         paint.getTextBounds(text, 0, text.length(), bounds);
@@ -410,9 +407,14 @@ public class SelectPointsActivity extends AppCompatActivity implements OnMapRead
 
     @Override
     public void onTaskDone(Object... values) {
-        if (currentPolyline != null)
+
+        if (currentPolyline != null) {
             currentPolyline.remove();
-        currentPolyline = mMap.addPolyline((PolylineOptions) values[0]);
+        }
+
+        PolylineOptions options = (PolylineOptions) values[0];
+        options.width(5).color(Color.RED).geodesic(false);
+        currentPolyline = mMap.addPolyline(options);
     }
 
 }
