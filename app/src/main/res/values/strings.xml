@@ -37,6 +37,8 @@
     <string name="insert_place_address">Inserir um Endereço</string>
     <string name="insert_place_address_message">Procure ser um pouco específico com o endereço</string>
     <string name="return_to_place">Voltar para o ponto de partida</string>
+    <string name="request_clear_map">Limpar Mapa</string>
+    <string name="request_clear_map_message">Deseja limpar todo o mapa e zerar rotas?</string>
 
     <!--  ICON TITLE  -->
     <string name="my_location">Meu Local</string>

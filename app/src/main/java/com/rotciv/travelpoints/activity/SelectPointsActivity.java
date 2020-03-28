@@ -38,6 +38,8 @@ import androidx.core.content.ContextCompat;
 
 import android.os.StrictMode;
 import android.util.Log;
+import android.view.Menu;
+import android.view.MenuItem;
 import android.view.MotionEvent;
 import android.view.View;
 import android.view.inputmethod.InputMethodManager;
@@ -47,6 +49,7 @@ import android.widget.LinearLayout;
 import android.widget.ProgressBar;
 import android.widget.Toast;
 
+import com.logicbeanzs.uberpolylineanimation.MapAnimator;
 import com.rotciv.travelpoints.R;
 import com.rotciv.travelpoints.directionhelpers.FetchURL;
 import com.rotciv.travelpoints.directionhelpers.TaskLoadedCallback;
@@ -109,6 +112,50 @@ public class SelectPointsActivity extends AppCompatActivity implements OnMapRead
         setEditTextOnTouchListener();
     }
 
+    @Override
+    public boolean onCreateOptionsMenu(Menu menu) {
+        getMenuInflater().inflate(R.menu.menu_principal, menu);
+
+        return super.onCreateOptionsMenu(menu);
+    }
+
+    public void clearMap () {
+
+        AlertDialog.Builder builder = new AlertDialog.Builder(this);
+        builder.setTitle(R.string.request_clear_map);
+        builder.setMessage(R.string.request_clear_map_message);
+
+        builder.setPositiveButton(R.string.confirm, new DialogInterface.OnClickListener() {
+            @Override
+            public void onClick(DialogInterface dialog, int which) {
+                mMap.clear();
+                locations.clear();
+                markerCounter = 0;
+                requestStartingPoint();
+            }
+        }).setNegativeButton(R.string.negative, new DialogInterface.OnClickListener() {
+            @Override
+            public void onClick(DialogInterface dialog, int which) {
+                // does nothing.
+            }
+        });
+
+        AlertDialog dialog = builder.create();
+        dialog.show();
+
+    }
+
+    @Override
+    public boolean onOptionsItemSelected(MenuItem item) {
+        switch (item.getItemId()){
+            case R.id.itemClear:
+                clearMap();
+                break;
+        }
+
+        return super.onOptionsItemSelected(item);
+    }
+
     private String getUrl(List<Location> newLocations, String directionMode ) {
         int destIndex = newLocations.size() - 1;
 
@@ -148,7 +195,7 @@ public class SelectPointsActivity extends AppCompatActivity implements OnMapRead
         returnToOriginCheckBox.setLayoutParams(lp);
         returnToOriginCheckBox.setText(R.string.return_to_place);
 
-        if (locations.size() < 0) {
+        if (locations.size() < 5) {
             Toast.makeText(this, R.string.few_locations, Toast.LENGTH_SHORT).show();
         } else {
             AlertDialog.Builder builder = new AlertDialog.Builder(this);
@@ -422,7 +469,8 @@ public class SelectPointsActivity extends AppCompatActivity implements OnMapRead
 
         PolylineOptions options = (PolylineOptions) values[0];
         options.width(5).color(Color.RED).geodesic(false);
-        currentPolyline = mMap.addPolyline(options);
+        // currentPolyline = mMap.addPolyline(options);
+        MapAnimator.getInstance().animateRoute(mMap, options.getPoints());
     }
 
 }
