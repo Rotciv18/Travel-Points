@@ -51,6 +51,7 @@ import com.rotciv.travelpoints.R;
 import com.rotciv.travelpoints.directionhelpers.FetchURL;
 import com.rotciv.travelpoints.directionhelpers.TaskLoadedCallback;
 import com.rotciv.travelpoints.helper.Graphs;
+import com.rotciv.travelpoints.helper.VND;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -162,13 +163,20 @@ public class SelectPointsActivity extends AppCompatActivity implements OnMapRead
                     double[][] adjacentMatrix = Graphs.mountAdjacencyMatrix(locations);
                     int[] way = Graphs.nearestNeightbor(adjacentMatrix, returnToOriginCheckBox.isChecked());
 
+                    double solution = 0;
+                    for (int i = 0; i < way.length - 1; i++) {
+                        solution += adjacentMatrix[way[i]][way[i+1]];
+                    }
+
+                    VND bestNeighbor = new VND(way, adjacentMatrix, solution, returnToOriginCheckBox.isChecked());
+
                     List<Location> newLocations = new ArrayList<>();
 
-                    int size = returnToOriginCheckBox.isChecked() ?
-                            locations.size() + 1 : locations.size();
+                    int[] bestNeighborWay = bestNeighbor.getWay();
+                    int size = bestNeighborWay.length;
                     for (int i = 0; i < size; i++) {
 
-                        newLocations.add(locations.get(way[i]));
+                        newLocations.add(locations.get(bestNeighborWay[i]));
 
                     }
 
